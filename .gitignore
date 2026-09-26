@@ -1,0 +1,23 @@
+# Binaries / local toolchain
+bin/
+.tools/
+
+# Runtime data
+data/
+*.duckdb
+*.duckdb.wal
+
+# Local secrets — copy from config.example.yaml
+configs/config.yaml
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Go / test
+coverage.out
+*.test

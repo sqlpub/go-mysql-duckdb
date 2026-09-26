@@ -1,0 +1,25 @@
+mysql:
+  addr: "127.0.0.1:3306"
+  user: "repl"
+  password: "replpass"
+  server_id: 1001
+  flavor: mysql
+  charset: utf8mb4
+
+duckdb:
+  path: "./data/sync.duckdb"
+
+sync:
+  # MySQL databases to sync
+  databases: ["demo"]
+  # Empty = all base tables with a primary key in the listed databases.
+  # Or pin tables as "db.table":
+  tables:
+    - "demo.users"
+    - "demo.orders"
+  checkpoint: "./data/checkpoint.json"
+  batch_size: 1000
+  # Parallel MySQL readers + DuckDB connections for full dump.
+  # Integer single-column PK tables are split into this many PK ranges.
+  dump_concurrency: 4
+  # debug: true
