@@ -42,3 +42,46 @@ sync:
 		t.Fatal("other db should not be allowed")
 	}
 }
+
+func TestExcludeTables(t *testing.T) {
+	cfg := &Config{
+		Sync: SyncConfig{
+			Databases:     []string{"demo", "app"},
+			ExcludeTables: []string{"demo.big_logs", "audit_*", "app.tmp_*"},
+		},
+	}
+	if !cfg.TableAllowed("demo", "users") {
+		t.Fatal("users should be allowed")
+	}
+	if cfg.TableAllowed("demo", "big_logs") {
+		t.Fatal("big_logs should be excluded")
+	}
+	if cfg.TableAllowed("demo", "audit_2024") {
+		t.Fatal("audit_* bare pattern should exclude")
+	}
+	if cfg.TableAllowed("app", "tmp_cache") {
+		t.Fatal("app.tmp_* should exclude")
+	}
+	if !cfg.TableAllowed("app", "users") {
+		t.Fatal("app.users should be allowed")
+	}
+}
+
+func TestAllowlistWithExclude(t *testing.T) {
+	cfg := &Config{
+		Sync: SyncConfig{
+			Databases:     []string{"demo"},
+			Tables:        []string{"demo.user_*"},
+			ExcludeTables: []string{"demo.user_sessions"},
+		},
+	}
+	if !cfg.TableAllowed("demo", "user_profile") {
+		t.Fatal("user_profile should match allow glob")
+	}
+	if cfg.TableAllowed("demo", "user_sessions") {
+		t.Fatal("user_sessions excluded even if allow-matched")
+	}
+	if cfg.TableAllowed("demo", "orders") {
+		t.Fatal("orders not in allowlist")
+	}
+}

@@ -1,0 +1,11 @@
+.git
+.idea
+.tools
+.DS_Store
+bin
+data
+dist
+*.duckdb
+*.duckdb.wal
+configs/config.yaml
+**/node_modules

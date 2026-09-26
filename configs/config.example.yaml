@@ -12,11 +12,16 @@ duckdb:
 sync:
   # MySQL databases to sync
   databases: ["demo"]
-  # Empty = all base tables with a primary key in the listed databases.
-  # Or pin tables as "db.table":
-  tables:
-    - "demo.users"
-    - "demo.orders"
+  # Optional allowlist. Empty = all base tables with a primary key in the listed databases.
+  # Supports "db.table" or glob: "demo.user_*"
+  tables: []
+  # Optional denylist (applied after allowlist). Use to skip large / noisy tables.
+  # - "db.table" exact
+  # - "table_name" or "prefix*" (any listed database)
+  # - "db.big_*" glob on fully-qualified name
+  exclude_tables:
+    - "demo.big_logs"
+    # - "*_archive"
   checkpoint: "./data/checkpoint.json"
   batch_size: 1000
   # Parallel MySQL readers + DuckDB connections for full dump.

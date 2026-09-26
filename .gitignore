@@ -1,6 +1,7 @@
-# Binaries / local toolchain
+# Binaries / local toolchain / build output
 bin/
 .tools/
+dist/
 
 # Runtime data
 data/

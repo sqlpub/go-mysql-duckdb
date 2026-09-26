@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -28,10 +29,15 @@ type DuckDBConfig struct {
 }
 
 type SyncConfig struct {
-	Databases  []string `yaml:"databases"`
-	Tables     []string `yaml:"tables"` // "db.table"; empty = all PK tables in databases
-	Checkpoint string   `yaml:"checkpoint"`
-	BatchSize int `yaml:"batch_size"`
+	Databases []string `yaml:"databases"`
+	// Tables is an optional allowlist of "db.table" (or glob like "demo.user_*").
+	// Empty = all base tables with a primary key in databases (minus exclude_tables).
+	Tables []string `yaml:"tables"`
+	// ExcludeTables skips these tables after the allowlist check.
+	// Entries: "db.table", bare "table" (any listed database), or glob ("demo.big_*", "*_log").
+	ExcludeTables []string `yaml:"exclude_tables"`
+	Checkpoint    string   `yaml:"checkpoint"`
+	BatchSize     int      `yaml:"batch_size"`
 	// DumpConcurrency is parallel MySQL readers + DuckDB connections during full dump.
 	// Integer single-PK tables are split into this many PK ranges.
 	// DuckDB in-process concurrent appends are used (official multi-writer model).
@@ -94,9 +100,24 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("sync.databases must contain at least one database")
 	}
 	for _, t := range c.Sync.Tables {
-		if !strings.Contains(t, ".") {
-			return fmt.Errorf("sync.tables entry %q must be db.table", t)
+		if err := validateTablePattern(t, "sync.tables"); err != nil {
+			return err
 		}
+	}
+	for _, t := range c.Sync.ExcludeTables {
+		if err := validateTablePattern(t, "sync.exclude_tables"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateTablePattern(pat, field string) error {
+	if pat == "" {
+		return fmt.Errorf("%s entry must not be empty", field)
+	}
+	if strings.ContainsAny(pat, "/") {
+		return fmt.Errorf("%s entry %q is invalid", field, pat)
 	}
 	return nil
 }
@@ -113,16 +134,35 @@ func (c *Config) TableAllowed(schema, table string) bool {
 	if !dbOK {
 		return false
 	}
-	if len(c.Sync.Tables) == 0 {
-		return true
-	}
 	full := schema + "." + table
-	for _, t := range c.Sync.Tables {
-		if t == full {
+	if len(c.Sync.Tables) > 0 && !matchAnyPattern(c.Sync.Tables, schema, table, full) {
+		return false
+	}
+	if matchAnyPattern(c.Sync.ExcludeTables, schema, table, full) {
+		return false
+	}
+	return true
+}
+
+func matchAnyPattern(patterns []string, schema, table, full string) bool {
+	for _, pat := range patterns {
+		if matchTablePattern(pat, schema, table, full) {
 			return true
 		}
 	}
 	return false
+}
+
+// matchTablePattern supports:
+//   - "db.table" exact or glob on the full name
+//   - "table" / "prefix*" bare name (matches table in any allowed database)
+func matchTablePattern(pat, schema, table, full string) bool {
+	if !strings.Contains(pat, ".") {
+		ok, err := path.Match(pat, table)
+		return err == nil && ok
+	}
+	ok, err := path.Match(pat, full)
+	return err == nil && ok
 }
 
 // DumpTables returns tables for canal dump config (schema.table).

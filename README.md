@@ -4,6 +4,8 @@ Real-time MySQL → DuckDB sync in a single Go process: schema + row-level CDC.
 
 **Module:** [`github.com/sqlpub/go-mysql-duckdb`](https://github.com/sqlpub/go-mysql-duckdb)
 
+English | [中文](README_zh.md)
+
 [![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go&logoColor=white)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -46,26 +48,14 @@ enforce_gtid_consistency = ON
 - Replication user privileges: `SELECT`, `REPLICATION SLAVE`, `REPLICATION CLIENT`
 - Tables must have a **primary key**
 
-## Quick start (Docker demo)
+## Quick start
 
 ```bash
-# 1) Start MySQL with ROW + GTID
-docker compose up -d
-
-# 2) Config
 cp configs/config.example.yaml configs/config.yaml
+# edit MySQL addr / user / password / databases
 
-# 3) Run syncer
 go run ./cmd/syncer -config configs/config.yaml
 ```
-
-Demo credentials (from `docker-compose` + `scripts/mysql-init.sql`):
-
-| | |
-|--|--|
-| MySQL | `127.0.0.1:3306` |
-| User / pass | `repl` / `replpass` |
-| Database | `demo` |
 
 Re-run full dump:
 
@@ -87,7 +77,8 @@ See [`configs/config.example.yaml`](configs/config.example.yaml).
 | Key | Meaning |
 |-----|---------|
 | `sync.databases` | Databases to sync |
-| `sync.tables` | Optional `db.table` allowlist; empty = all PK tables |
+| `sync.tables` | Optional `db.table` / glob allowlist; empty = all PK tables |
+| `sync.exclude_tables` | Optional denylist (`db.table`, bare `table` / `prefix*`, or `db.big_*`) |
 | `sync.checkpoint` | Position file path |
 | `sync.batch_size` | Insert batch size |
 | `sync.dump_concurrency` | Parallel MySQL readers + DuckDB connections (default `4`) |
@@ -101,6 +92,33 @@ Progress logs (approx. every 2s): `full dump progress` (uses `information_schema
 git clone https://github.com/sqlpub/go-mysql-duckdb.git
 cd go-mysql-duckdb
 make build   # → bin/syncer
+```
+
+### Linux release package
+
+Requires Docker (CGO / DuckDB). Default builds `linux/amd64` tarball under `dist/`:
+
+```bash
+make release-linux          # linux/amd64
+make release-linux-arm64    # linux/arm64
+make release-linux-all      # both
+```
+
+Each archive contains `syncer`, `configs/config.example.yaml`, docs, and `run.sh`.
+
+```bash
+tar -xzf dist/go-mysql-duckdb-*-linux-amd64.tar.gz
+cd go-mysql-duckdb-*-linux-amd64
+cp configs/config.example.yaml configs/config.yaml   # edit MySQL settings
+./run.sh
+# or: ./syncer -config configs/config.yaml
+```
+
+Docker image:
+
+```bash
+make docker-image
+docker run --rm -v "$PWD/configs:/app/configs" -v "$PWD/data:/app/data" go-mysql-duckdb:latest
 ```
 
 ## Build & test
@@ -119,7 +137,7 @@ internal/schema/     # MySQL → DuckDB type mapping + DDL
 internal/duckdb/     # DuckDB store (append / upsert / delete)
 internal/syncer/     # Full dump, Canal handler, checkpoint
 configs/             # example YAML (local config.yaml is gitignored)
-scripts/             # MySQL init for docker compose
+scripts/             # release build helpers (e.g. Linux package)
 ```
 
 ## Limitations

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -12,11 +13,19 @@ import (
 	"github.com/sqlpub/go-mysql-duckdb/internal/syncer"
 )
 
+// Set by -ldflags "-X main.version=..."
+var version = "dev"
+
 func main() {
 	cfgPath := flag.String("config", "configs/config.yaml", "path to config YAML")
 	debug := flag.Bool("debug", false, "enable debug logging (log every row change)")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
 
+	if *showVersion {
+		fmt.Println(version)
+		return
+	}
 	cfg, err := config.Load(*cfgPath)
 	if err != nil {
 		slog.Error("load config", "err", err)
@@ -47,6 +56,7 @@ func main() {
 	defer cancel()
 
 	log.Info("go-mysql-duckdb starting",
+		"version", version,
 		"mysql", cfg.MySQL.Addr,
 		"duckdb", cfg.DuckDB.Path,
 		"databases", cfg.Sync.Databases,
