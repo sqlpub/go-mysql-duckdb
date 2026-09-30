@@ -28,3 +28,9 @@ sync:
   # Integer single-column PK tables are split into this many PK ranges.
   dump_concurrency: 4
   # debug: true
+
+query_api:
+  listen: ":8090"
+  # token: "dev-token"
+  max_rows: 1000
+  timeout_sec: 30

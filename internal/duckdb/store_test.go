@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/sqlpub/go-mysql-duckdb/internal/schema"
 )
@@ -93,5 +94,41 @@ func TestStoreCRUD(t *testing.T) {
 	}
 	if err := store.DropTable(ctx, "demo", "people"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestInsertLocalTimeTimeKeepsWallClock(t *testing.T) {
+	dir := t.TempDir()
+	store, err := Open(filepath.Join(dir, "tz.duckdb"), 100, 1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	ctx := context.Background()
+	meta := &schema.TableMeta{
+		Schema: "demo",
+		Name:   "t",
+		Columns: []schema.Column{
+			{Name: "id", DuckDBType: "BIGINT", Nullable: false, IsPK: true},
+			{Name: "ts", DuckDBType: "TIMESTAMP", Nullable: true},
+		},
+		PKCols: []string{"id"},
+	}
+	if err := store.CreateTable(ctx, meta); err != nil {
+		t.Fatal(err)
+	}
+
+	loc := time.FixedZone("CST", 8*3600)
+	local := time.Date(2026, 9, 25, 7, 49, 0, 0, loc) // as parseTime&loc=Local
+	if err := store.InsertRows(ctx, meta, [][]any{{int64(1), local}}); err != nil {
+		t.Fatal(err)
+	}
+	var s string
+	if err := store.DB().QueryRowContext(ctx, `SELECT ts::VARCHAR FROM "demo"."t" WHERE id = 1`).Scan(&s); err != nil {
+		t.Fatal(err)
+	}
+	if s != "2026-09-25 07:49:00" {
+		t.Fatalf("got %q, UnixMicro-of-Local would be 2026-09-24 23:49:00", s)
 	}
 }

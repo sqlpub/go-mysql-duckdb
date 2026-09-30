@@ -10,9 +10,21 @@ import (
 )
 
 type Config struct {
-	MySQL  MySQLConfig  `yaml:"mysql"`
-	DuckDB DuckDBConfig `yaml:"duckdb"`
-	Sync   SyncConfig   `yaml:"sync"`
+	MySQL    MySQLConfig    `yaml:"mysql"`
+	DuckDB   DuckDBConfig   `yaml:"duckdb"`
+	Sync     SyncConfig     `yaml:"sync"`
+	QueryAPI QueryAPIConfig `yaml:"query_api"`
+}
+
+type QueryAPIConfig struct {
+	// Listen e.g. ":8090". Empty disables the HTTP query API.
+	Listen string `yaml:"listen"`
+	// Token if set requires Authorization: Bearer <token> (or raw token).
+	Token string `yaml:"token"`
+	// MaxRows caps returned rows (default 1000).
+	MaxRows int `yaml:"max_rows"`
+	// TimeoutSec per query (default 30).
+	TimeoutSec int `yaml:"timeout_sec"`
 }
 
 type MySQLConfig struct {
@@ -89,6 +101,14 @@ func (c *Config) applyDefaults() {
 	}
 	if c.Sync.DumpConcurrency <= 0 {
 		c.Sync.DumpConcurrency = 4
+	}
+	if c.QueryAPI.Listen != "" {
+		if c.QueryAPI.MaxRows <= 0 {
+			c.QueryAPI.MaxRows = 1000
+		}
+		if c.QueryAPI.TimeoutSec <= 0 {
+			c.QueryAPI.TimeoutSec = 30
+		}
 	}
 }
 

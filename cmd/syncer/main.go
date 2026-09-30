@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/sqlpub/go-mysql-duckdb/internal/config"
+	"github.com/sqlpub/go-mysql-duckdb/internal/queryapi"
 	"github.com/sqlpub/go-mysql-duckdb/internal/syncer"
 )
 
@@ -61,7 +62,18 @@ func main() {
 		"duckdb", cfg.DuckDB.Path,
 		"databases", cfg.Sync.Databases,
 		"debug", cfg.Sync.Debug,
+		"query_api", cfg.QueryAPI.Listen,
 	)
+
+	if cfg.QueryAPI.Listen != "" {
+		api := queryapi.New(cfg.QueryAPI, s.Store(), log)
+		go func() {
+			if err := api.Start(ctx); err != nil && ctx.Err() == nil {
+				log.Error("query api failed", "err", err)
+				cancel()
+			}
+		}()
+	}
 
 	if err := s.Run(ctx); err != nil && ctx.Err() == nil {
 		log.Error("sync failed", "err", err)

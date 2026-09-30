@@ -421,6 +421,12 @@ func convertValue(v any) any {
 	switch x := v.(type) {
 	case []byte:
 		return string(x)
+	case time.Time:
+		// parseTime+loc=Local yields a correct instant, but duckdb-go binds via
+		// UnixMicro into naive TIMESTAMP (UTC wall). Rebind the same Y-M-D h:m:s
+		// with zero offset so the stored digits match MySQL / Local display.
+		return time.Date(x.Year(), x.Month(), x.Day(),
+			x.Hour(), x.Minute(), x.Second(), x.Nanosecond(), time.UTC)
 	default:
 		return v
 	}

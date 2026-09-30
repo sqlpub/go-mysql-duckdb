@@ -70,6 +70,28 @@ go run ./cmd/syncer -config configs/config.yaml
 go run ./cmd/syncer -config configs/config.yaml -debug
 ```
 
+
+## 查询 API
+
+同步进程可同时提供只读 SQL 接口（与 DuckDB 同进程，避免文件锁冲突）：
+
+```yaml
+query_api:
+  listen: ":8090"
+  # token: "dev-token"
+  max_rows: 1000
+  timeout_sec: 30
+```
+
+```bash
+curl -s http://127.0.0.1:8090/healthz
+curl -s -X POST http://127.0.0.1:8090/v1/sql/query \
+  -H 'Content-Type: application/json' \
+  -d '{"sql":"SELECT 1 AS n","limit":10}'
+```
+
+仅允许 `SELECT` / `WITH` / `SHOW` / `DESCRIBE` / `EXPLAIN`；禁止多语句与写操作。
+
 ## 配置
 
 见 [`configs/config.example.yaml`](configs/config.example.yaml)。
