@@ -86,16 +86,6 @@ See [`configs/config.example.yaml`](configs/config.example.yaml).
 
 Progress logs (approx. every 2s): `full dump progress` (uses `information_schema.TABLE_ROWS` estimate) → `full dump table done` → `start GTID incremental`.
 
-## Versioning
-
-**SemVer** tags `vMAJOR.MINOR.PATCH`. Full policy: [VERSIONING.md](VERSIONING.md).
-
-- **PATCH**: bug fixes / docs / packaging
-- **MINOR**: new features (prefer backward compatible; on `0.x` breaking changes are allowed if noted)
-- **MAJOR**: breaking API/config, or first stable `v1.0.0`
-
-Release: merge to `main` → tag → `VERSION=vX.Y.Z make release-linux` → GitHub Release with `dist/` artifacts.
-
 ## Install
 
 ```bash

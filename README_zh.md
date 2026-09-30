@@ -108,18 +108,6 @@ curl -s -X POST http://127.0.0.1:8090/v1/sql/query \
 
 进度日志约每 2 秒：`full dump progress`（行数估算来自 `information_schema.TABLE_ROWS`）→ `full dump table done` → `start GTID incremental`。
 
-## 版本号
-
-采用 **SemVer**：`vMAJOR.MINOR.PATCH`。细则见 [VERSIONING.md](VERSIONING.md)。
-
-简要约定：
-
-- **PATCH**：修 bug / 文档 / 打包，对外行为不变
-- **MINOR**：新能力（新接口、新配置），尽量兼容；`0.x` 下必要时可含不兼容变更并在 Release 说明
-- **MAJOR**：不兼容变更，或进入稳定的 `v1.0.0`
-
-发版：`main` 合入 → 打 tag → `VERSION=vX.Y.Z make release-linux` → GitHub Release 挂载 `dist/` 产物。
-
 ## 安装
 
 ```bash
